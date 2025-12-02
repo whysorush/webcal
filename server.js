@@ -15,20 +15,28 @@ const feeds = {};
 // Configuration - Update these for your deployment
 const PORT = process.env.PORT || 3000;
 
-// Auto-detect domain and protocol from Render or other platforms
-let DOMAIN = process.env.DOMAIN;
-let PROTOCOL = process.env.PROTOCOL;
+// ⚙️ DEPLOYMENT CONFIGURATION
+// Update this when deploying to production
+const PRODUCTION_DOMAIN = 'webcal-epb3.onrender.com'; // Your Render domain
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
 
-if (!DOMAIN && process.env.RENDER_EXTERNAL_URL) {
-  // Render.com provides RENDER_EXTERNAL_URL (e.g., https://your-app.onrender.com)
+// Auto-detect configuration
+let DOMAIN;
+let PROTOCOL;
+
+if (IS_PRODUCTION) {
+  // Production: Use your Render domain
+  DOMAIN = PRODUCTION_DOMAIN;
+  PROTOCOL = 'https';
+} else if (process.env.RENDER_EXTERNAL_URL) {
+  // Render deployment (fallback if NODE_ENV not set)
   const renderUrl = new URL(process.env.RENDER_EXTERNAL_URL);
   DOMAIN = renderUrl.host;
-  PROTOCOL = renderUrl.protocol.replace(':', ''); // 'https' or 'http'
-} else if (!DOMAIN) {
-  DOMAIN = `localhost:${PORT}`;
-  PROTOCOL = PROTOCOL || 'http';
+  PROTOCOL = renderUrl.protocol.replace(':', '');
 } else {
-  PROTOCOL = PROTOCOL || 'https'; // Default to https for custom domains
+  // Local development
+  DOMAIN = `localhost:${PORT}`;
+  PROTOCOL = 'http';
 }
 
 const CONFIG = {
