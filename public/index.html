@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar Sync Feed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-tertiary: #1a1a25;
+      --accent-primary: #ff6b35;
+      --accent-secondary: #f7c35f;
+      --accent-gradient: linear-gradient(135deg, #ff6b35 0%, #f7c35f 100%);
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0b0;
+      --text-muted: #606070;
+      --border-color: #2a2a3a;
+      --success: #10b981;
+      --error: #ef4444;
+      --radius: 12px;
+      --radius-lg: 20px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    .bg-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .bg-pattern::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(255, 107, 53, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(247, 195, 95, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(255, 107, 53, 0.03) 0%, transparent 70%);
+      animation: pulse 15s ease-in-out infinite;
+    }
+
+    .grid-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.1) rotate(5deg); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-gradient);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 8px 32px rgba(255, 107, 53, 0.3);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      font-weight: 300;
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-bottom: 24px;
+      animation: fadeInUp 0.6s ease-out backwards;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .card-description {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'Sora', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .btn-subscribe {
+      width: 100%;
+      padding: 20px 28px;
+      font-size: 1.15rem;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+      color: white;
+    }
+
+    .btn-subscribe:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Event list */
+    .events-list {
+      margin-top: 24px;
+    }
+
+    .event-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .event-item:hover {
+      border-color: var(--accent-primary);
+    }
+
+    .event-date {
+      text-align: center;
+      min-width: 50px;
+    }
+
+    .event-day {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-primary);
+    }
+
+    .event-month {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .event-details {
+      flex: 1;
+    }
+
+    .event-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .event-time {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .event-location {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Device badge */
+    .device-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .device-badge .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Status messages */
+    .status {
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .status.show {
+      display: block;
+      animation: fadeInUp 0.3s ease-out;
+    }
+
+    .status.success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--success);
+    }
+
+    .status.error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--error);
+    }
+
+    .status.info {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #3b82f6;
+    }
+
+    /* Event count badge */
+    .event-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-tertiary);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .event-count-number {
+      font-weight: 700;
+      color: var(--accent-primary);
+      font-size: 1.1rem;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border-color);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-pattern">
+    <div class="grid-overlay"></div>
+  </div>
+
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">📅</div>
+      </div>
+      <h1>Calendar Sync Feed</h1>
+      <p class="subtitle">Subscribe once and all events sync automatically to your calendar</p>
+    </header>
+
+    <div class="device-badge">
+      <span class="dot"></span>
+      <span id="deviceType">Detecting device...</span>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📲</div>
+        <div>
+          <div class="card-title">Subscribe to Calendar</div>
+          <div class="card-description">Click below to sync all events to your calendar app</div>
+        </div>
+      </div>
+
+      <button class="btn btn-subscribe" id="subscribeBtn" onclick="subscribeToCalendar()">
+        <span>📲</span> <span id="subscribeBtnText">Subscribe to Calendar</span>
+      </button>
+      
+      <div class="status" id="subscribeStatus"></div>
+
+      <!-- Localhost Warning -->
+      <div id="localhostWarning" class="hidden" style="margin-top: 16px; padding: 16px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; color: #f59e0b;">
+        <div style="font-weight: 600; margin-bottom: 8px;">⚠️ Running on Localhost</div>
+        <div style="font-size: 0.85rem; line-height: 1.6;">
+          <strong>iOS/macOS:</strong> The webcal:// subscription works perfectly on localhost!<br>
+          <strong>Google Calendar:</strong> Cannot access localhost URLs. To test with Google Calendar:<br>
+          <ol style="margin: 8px 0 0 20px; padding: 0;">
+            <li>Install ngrok: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">npm install -g ngrok</code></li>
+            <li>Run: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">ngrok http 3000</code></li>
+            <li>Use the ngrok URL instead of localhost</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Calendar URLs -->
+      <div id="calendarUrls" class="hidden" style="margin-top: 20px; padding: 16px; background: var(--bg-tertiary); border-radius: 12px;">
+        <div style="font-weight: 600; margin-bottom: 12px; font-size: 0.9rem; color: var(--text-secondary);">📋 Calendar Feed URLs</div>
+        <div style="font-size: 0.75rem; margin-bottom: 8px;">
+          <div style="color: var(--text-muted); margin-bottom: 4px;">iOS/macOS (webcal):</div>
+          <input type="text" id="webcalUrlInput" readonly style="width: 100%; padding: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-secondary);" onclick="this.select()">
+        </div>
+        <div style="font-size: 0.75rem;">
+          <div style="color: var(--text-muted); margin-bottom: 4px;">HTTPS (Google Calendar, Outlook):</div>
+          <input type="text" id="httpsUrlInput" readonly style="width: 100%; padding: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-secondary);" onclick="this.select()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Events List -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <div>
+          <div class="card-title">Upcoming Events</div>
+          <div class="card-description">All events will be synced to your subscribed calendar</div>
+        </div>
+      </div>
+
+      <div class="event-count">
+        <span>Total Events:</span>
+        <span class="event-count-number" id="eventCount">0</span>
+      </div>
+
+      <div class="events-list" id="eventsList">
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+          <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">⏳</div>
+          <p>Loading events...</p>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Calendar feeds refresh automatically every 30 minutes</p>
+      <p style="margin-top: 8px;">Works with Apple Calendar, Google Calendar, Outlook & more</p>
+    </footer>
+  </div>
+
+  <script>
+    // State
+    let currentFeedId = null;
+    let currentEvents = [];
+
+    // API base URL
+    const API_BASE = window.location.origin;
+
+    // Device Detection
+    function isIos() {
+      return /iPhone|iPad|iPod/.test(navigator.userAgent);
+    }
+
+    function isAndroid() {
+      return /Android/.test(navigator.userAgent);
+    }
+
+    function isMac() {
+      return /Mac/.test(navigator.userAgent) && !isIos();
+    }
+
+    function getDeviceType() {
+      if (isIos()) return '📱 iOS Device Detected';
+      if (isAndroid()) return '🤖 Android Device Detected';
+      if (isMac()) return '💻 macOS Detected';
+      return '💻 Desktop Device Detected';
+    }
+
+    // Show status message
+    function showStatus(elementId, message, type = 'success') {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.className = `status show ${type}`;
+      setTimeout(() => el.classList.remove('show'), 5000);
+    }
+
+    // Initialize on page load
+    async function init() {
+      document.getElementById('deviceType').textContent = getDeviceType();
+      
+      // Check if running on localhost
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isLocalhost && !isIos() && !isMac()) {
+        document.getElementById('localhostWarning').classList.remove('hidden');
+      }
+      
+      try {
+        // Create a feed with dummy events
+        await createFeedWithEvents();
+      } catch (error) {
+        console.error('Initialization error:', error);
+        showStatus('subscribeStatus', '❌ Failed to initialize calendar feed', 'error');
+      }
+    }
+
+    // Create feed and add dummy events
+    async function createFeedWithEvents() {
+      // Create feed
+      const feedResponse = await fetch(`${API_BASE}/api/feeds`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner: 'Event Calendar' })
+      });
+
+      if (!feedResponse.ok) throw new Error('Failed to create feed');
+
+      const feedData = await feedResponse.json();
+      currentFeedId = feedData.feedId;
+
+      // Generate dummy events
+      const dummyEvents = generateDummyEvents();
+      
+      // Add all events to the feed
+      const eventsResponse = await fetch(`${API_BASE}/api/feeds/${currentFeedId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ events: dummyEvents })
+      });
+
+      if (!eventsResponse.ok) throw new Error('Failed to add events');
+
+      currentEvents = dummyEvents;
+      renderEvents();
+      
+      // Show calendar URLs
+      const httpsUrl = `${API_BASE}/calendars/feeds/${currentFeedId}.ics`;
+      const webcalUrl = `webcal://${window.location.host}/calendars/feeds/${currentFeedId}.ics`;
+      
+      document.getElementById('httpsUrlInput').value = httpsUrl;
+      document.getElementById('webcalUrlInput').value = webcalUrl;
+      document.getElementById('calendarUrls').classList.remove('hidden');
+    }
+
+    // Generate 10 dummy events
+    function generateDummyEvents() {
+      const now = new Date();
+      const events = [
+        {
+          summary: "Team Standup Meeting",
+          start: addDays(now, 1, 9, 0),
+          end: addDays(now, 1, 9, 30),
+          location: "Conference Room A",
+          description: "Daily team sync-up to discuss progress and blockers"
+        },
+        {
+          summary: "Product Launch Presentation",
+          start: addDays(now, 3, 14, 0),
+          end: addDays(now, 3, 15, 30),
+          location: "Main Auditorium",
+          description: "Q4 product launch presentation for stakeholders"
+        },
+        {
+          summary: "Client Meeting - Acme Corp",
+          start: addDays(now, 5, 10, 0),
+          end: addDays(now, 5, 11, 0),
+          location: "Zoom Meeting",
+          description: "Quarterly business review with Acme Corp",
+          url: "https://zoom.us/j/example"
+        },
+        {
+          summary: "Design Review Session",
+          start: addDays(now, 7, 15, 0),
+          end: addDays(now, 7, 16, 30),
+          location: "Design Studio",
+          description: "Review new UI/UX designs for mobile app"
+        },
+        {
+          summary: "Engineering All-Hands",
+          start: addDays(now, 10, 16, 0),
+          end: addDays(now, 10, 17, 0),
+          location: "Virtual - Teams",
+          description: "Monthly engineering team meeting"
+        },
+        {
+          summary: "Workshop: Agile Methodologies",
+          start: addDays(now, 12, 9, 0),
+          end: addDays(now, 12, 12, 0),
+          location: "Training Room B",
+          description: "Interactive workshop on Agile and Scrum practices"
+        },
+        {
+          summary: "Budget Planning Meeting",
+          start: addDays(now, 14, 13, 0),
+          end: addDays(now, 14, 14, 30),
+          location: "Executive Boardroom",
+          description: "Q1 2025 budget planning and allocation"
+        },
+        {
+          summary: "Team Building Event",
+          start: addDays(now, 17, 18, 0),
+          end: addDays(now, 17, 21, 0),
+          location: "Rooftop Lounge",
+          description: "Monthly team social event - food and games!"
+        },
+        {
+          summary: "Code Review: Payment Module",
+          start: addDays(now, 20, 11, 0),
+          end: addDays(now, 20, 12, 0),
+          location: "Dev Room 3",
+          description: "Peer review of payment integration code"
+        },
+        {
+          summary: "Year-End Company Celebration",
+          start: addDays(now, 25, 19, 0),
+          end: addDays(now, 25, 23, 0),
+          location: "Grand Ballroom - Hilton",
+          description: "Annual company celebration dinner and awards ceremony"
+        }
+      ];
+
+      return events;
+    }
+
+    // Helper to add days and set time
+    function addDays(date, days, hours, minutes) {
+      const result = new Date(date);
+      result.setDate(result.getDate() + days);
+      result.setHours(hours, minutes, 0, 0);
+      return result.toISOString();
+    }
+
+    // Subscribe to Calendar
+    function subscribeToCalendar() {
+      if (!currentFeedId) {
+        showStatus('subscribeStatus', '❌ Calendar feed not ready yet', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('subscribeBtn');
+      const btnText = document.getElementById('subscribeBtnText');
+      
+      btn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span> Opening calendar...';
+
+      const httpsUrl = `${API_BASE}/calendars/feeds/${currentFeedId}.ics`;
+      const webcalUrl = `webcal://${window.location.host}/calendars/feeds/${currentFeedId}.ics`;
+      const googleUrl = `https://calendar.google.com/calendar/u/0/r?cid=${encodeURIComponent(httpsUrl)}`;
+
+      // Check if running on localhost
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+      setTimeout(() => {
+        if (isIos() || isMac()) {
+          // iOS and macOS: Use webcal:// protocol (works on localhost)
+          window.location.href = webcalUrl;
+          showStatus('subscribeStatus', '✅ Opening Calendar app... Accept the subscription to sync all events!', 'success');
+        } else if (isAndroid()) {
+          // Android: Open Google Calendar subscription
+          window.open(googleUrl, '_blank');
+          if (isLocalhost) {
+            showStatus('subscribeStatus', '⚠️ Note: Google Calendar cannot access localhost. Deploy to a public URL or use ngrok for testing.', 'info');
+          } else {
+            showStatus('subscribeStatus', '✅ Opening Google Calendar... Click "Add" to subscribe and sync all events!', 'success');
+          }
+        } else {
+          // Desktop: Open Google Calendar
+          window.open(googleUrl, '_blank');
+          if (isLocalhost) {
+            showStatus('subscribeStatus', '⚠️ Note: Google Calendar cannot access localhost. For iOS/macOS Calendar, the webcal:// link works! For Google Calendar, deploy to a public URL or use ngrok.', 'info');
+          } else {
+            showStatus('subscribeStatus', '✅ Opening Google Calendar... Click "Add" to subscribe and sync all events!', 'success');
+          }
+        }
+
+        btn.disabled = false;
+        btnText.textContent = 'Subscribe to Calendar';
+      }, 500);
+    }
+
+    // Render Events List
+    function renderEvents() {
+      const container = document.getElementById('eventsList');
+      const countEl = document.getElementById('eventCount');
+      
+      countEl.textContent = currentEvents.length;
+
+      if (currentEvents.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+            <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">📭</div>
+            <p>No events available</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort events by start date
+      const sortedEvents = [...currentEvents].sort((a, b) => 
+        new Date(a.start) - new Date(b.start)
+      );
+
+      container.innerHTML = sortedEvents.map(event => {
+        const startDate = new Date(event.start);
+        const endDate = new Date(event.end);
+        const day = startDate.getDate();
+        const month = startDate.toLocaleString('en', { month: 'short' });
+        const timeStr = `${startDate.toLocaleTimeString('en', { 
+          hour: 'numeric', 
+          minute: '2-digit' 
+        })} - ${endDate.toLocaleTimeString('en', { 
+          hour: 'numeric', 
+          minute: '2-digit' 
+        })}`;
+
+        return `
+          <div class="event-item">
+            <div class="event-date">
+              <div class="event-day">${day}</div>
+              <div class="event-month">${month}</div>
+            </div>
+            <div class="event-details">
+              <div class="event-title">${escapeHtml(event.summary)}</div>
+              <div class="event-time">🕐 ${timeStr}</div>
+              ${event.location ? `<div class="event-location">📍 ${escapeHtml(event.location)}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

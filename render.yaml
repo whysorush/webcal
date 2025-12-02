@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: webcal-service
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PROTOCOL
+        value: https
+      - key: DOMAIN
+        generateValue: true
+      - key: PORT
+        value: 3000
+
