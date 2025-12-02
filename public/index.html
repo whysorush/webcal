@@ -675,32 +675,32 @@
 
       const httpsUrl = `${API_BASE}/calendars/feeds/${currentFeedId}.ics`;
       const webcalUrl = `webcal://${window.location.host}/calendars/feeds/${currentFeedId}.ics`;
-      const googleUrl = `https://calendar.google.com/calendar/u/0/r?cid=${encodeURIComponent(httpsUrl)}`;
 
       // Check if running on localhost
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
       setTimeout(() => {
         if (isIos() || isMac()) {
-          // iOS and macOS: Use webcal:// protocol (works on localhost)
+          // iOS and macOS: Use webcal:// protocol (works perfectly!)
           window.location.href = webcalUrl;
           showStatus('subscribeStatus', '✅ Opening Calendar app... Accept the subscription to sync all events!', 'success');
-        } else if (isAndroid()) {
-          // Android: Open Google Calendar subscription
-          window.open(googleUrl, '_blank');
-          if (isLocalhost) {
-            showStatus('subscribeStatus', '⚠️ Note: Google Calendar cannot access localhost. Deploy to a public URL or use ngrok for testing.', 'info');
-          } else {
-            showStatus('subscribeStatus', '✅ Opening Google Calendar... Click "Add" to subscribe and sync all events!', 'success');
-          }
         } else {
-          // Desktop: Open Google Calendar
-          window.open(googleUrl, '_blank');
-          if (isLocalhost) {
-            showStatus('subscribeStatus', '⚠️ Note: Google Calendar cannot access localhost. For iOS/macOS Calendar, the webcal:// link works! For Google Calendar, deploy to a public URL or use ngrok.', 'info');
-          } else {
-            showStatus('subscribeStatus', '✅ Opening Google Calendar... Click "Add" to subscribe and sync all events!', 'success');
-          }
+          // Android/Desktop: Copy URL and show instructions
+          // Copy the HTTPS URL to clipboard
+          navigator.clipboard.writeText(httpsUrl).then(() => {
+            showStatus('subscribeStatus', 
+              `📋 Calendar URL copied! Go to Google Calendar → Click + next to "Other calendars" → Select "From URL" → Paste and add!`, 
+              'info'
+            );
+          }).catch(() => {
+            showStatus('subscribeStatus', 
+              `📝 Copy this URL and add it in Google Calendar (+ → From URL): ${httpsUrl}`, 
+              'info'
+            );
+          });
+          
+          // Also open Google Calendar in a new tab
+          window.open('https://calendar.google.com', '_blank');
         }
 
         btn.disabled = false;
