@@ -242,7 +242,6 @@ app.get('/calendars/feeds/:feedId.ics', (req, res) => {
     name: `${feed.owner}'s Calendar`,
     description: `Calendar feed for ${feed.owner}`,
     prodId: { company: 'WebCal Service', product: 'Calendar Feed' },
-    timezone: 'UTC',
     ttl: 1800 // Suggest refresh every 30 minutes
   });
 
@@ -277,11 +276,12 @@ app.get('/calendars/feeds/:feedId.ics', (req, res) => {
 
   // Set proper headers for calendar subscription
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="${feedId}.ics"`);
+  res.setHeader('Content-Disposition', `inline; filename="${feedId}.ics"`);
   res.setHeader('ETag', etag);
   res.setHeader('Last-Modified', new Date(feed.lastUpdated).toUTCString());
-  res.setHeader('Cache-Control', 'public, max-age=1800, must-revalidate');
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate'); // Force fresh fetch
   res.setHeader('X-WR-CALNAME', `${feed.owner}'s Calendar`);
+  res.setHeader('X-WR-CALDESC', `Calendar feed for ${feed.owner}`);
 
   // Check If-None-Match header for 304 response
   const clientEtag = req.headers['if-none-match'];
