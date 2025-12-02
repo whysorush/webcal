@@ -308,6 +308,11 @@ app.get('/', (req, res) => {
 // Start the server
 app.listen(CONFIG.port, () => {
   console.log(`\n🗓️  Calendar Feed Service running at ${CONFIG.protocol}://${CONFIG.domain}`);
+  console.log(`\n⚙️  Configuration:`);
+  console.log(`   Protocol: ${CONFIG.protocol}`);
+  console.log(`   Domain: ${CONFIG.domain}`);
+  console.log(`   Port: ${CONFIG.port}`);
+  console.log(`   Render URL: ${process.env.RENDER_EXTERNAL_URL || 'N/A'}`);
   console.log(`\n📡 API Endpoints:`);
   console.log(`   POST   /api/feeds                    - Create a new feed`);
   console.log(`   GET    /api/feeds                    - List all feeds`);
