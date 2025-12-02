@@ -14,15 +14,21 @@ const feeds = {};
 
 // Configuration - Update these for your deployment
 const PORT = process.env.PORT || 3000;
-const PROTOCOL = process.env.PROTOCOL || 'http';
 
-// Auto-detect domain from Render or other platforms
+// Auto-detect domain and protocol from Render or other platforms
 let DOMAIN = process.env.DOMAIN;
+let PROTOCOL = process.env.PROTOCOL;
+
 if (!DOMAIN && process.env.RENDER_EXTERNAL_URL) {
-  // Render.com provides RENDER_EXTERNAL_URL
-  DOMAIN = process.env.RENDER_EXTERNAL_URL.replace(/^https?:\/\//, '');
+  // Render.com provides RENDER_EXTERNAL_URL (e.g., https://your-app.onrender.com)
+  const renderUrl = new URL(process.env.RENDER_EXTERNAL_URL);
+  DOMAIN = renderUrl.host;
+  PROTOCOL = renderUrl.protocol.replace(':', ''); // 'https' or 'http'
 } else if (!DOMAIN) {
   DOMAIN = `localhost:${PORT}`;
+  PROTOCOL = PROTOCOL || 'http';
+} else {
+  PROTOCOL = PROTOCOL || 'https'; // Default to https for custom domains
 }
 
 const CONFIG = {
