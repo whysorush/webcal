@@ -675,9 +675,7 @@
 
       const httpsUrl = `${API_BASE}/calendars/feeds/${currentFeedId}.ics`;
       const webcalUrl = `webcal://${window.location.host}/calendars/feeds/${currentFeedId}.ics`;
-
-      // Check if running on localhost
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const googleCalendarAddUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(httpsUrl)}`;
 
       setTimeout(() => {
         if (isIos() || isMac()) {
@@ -685,22 +683,27 @@
           window.location.href = webcalUrl;
           showStatus('subscribeStatus', '✅ Opening Calendar app... Accept the subscription to sync all events!', 'success');
         } else {
-          // Android/Desktop: Copy URL and show instructions
-          // Copy the HTTPS URL to clipboard
-          navigator.clipboard.writeText(httpsUrl).then(() => {
-            showStatus('subscribeStatus', 
-              `📋 Calendar URL copied! Go to Google Calendar → Click + next to "Other calendars" → Select "From URL" → Paste and add!`, 
-              'info'
-            );
-          }).catch(() => {
-            showStatus('subscribeStatus', 
-              `📝 Copy this URL and add it in Google Calendar (+ → From URL): ${httpsUrl}`, 
-              'info'
-            );
-          });
+          // Android/Desktop: Try automatic import via Google Calendar
+          // Open the Google Calendar add URL
+          const calWindow = window.open(googleCalendarAddUrl, '_blank');
           
-          // Also open Google Calendar in a new tab
-          window.open('https://calendar.google.com', '_blank');
+          // Copy URL to clipboard as backup
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(httpsUrl).catch(() => {});
+          }
+          
+          // Show helpful status message
+          if (calWindow) {
+            showStatus('subscribeStatus', 
+              `✅ Opening Google Calendar... If the calendar doesn't add automatically, click + next to "Other calendars" → "From URL" → paste the URL (already copied to clipboard!)`, 
+              'info'
+            );
+          } else {
+            showStatus('subscribeStatus', 
+              `⚠️ Pop-up blocked! Please allow pop-ups or manually go to Google Calendar and add this URL: ${httpsUrl}`, 
+              'info'
+            );
+          }
         }
 
         btn.disabled = false;
