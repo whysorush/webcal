@@ -419,8 +419,37 @@
       <button class="btn btn-subscribe" id="subscribeBtn" onclick="subscribeToCalendar()">
         <span>📲</span> <span id="subscribeBtnText">Subscribe to Calendar</span>
       </button>
+
+      <button class="btn btn-subscribe hidden" id="googleCalendarBtn" onclick="addToGoogleCalendar()" style="background: linear-gradient(135deg, #4285f4 0%, #34a853 100%); margin-top: 12px;">
+        <span>📅</span> <span id="googleCalendarBtnText">Add to Google Calendar</span>
+      </button>
       
       <div class="status" id="subscribeStatus"></div>
+
+      <!-- Google Calendar Instructions -->
+      <div id="googleCalendarInstructions" class="hidden" style="margin-top: 20px; padding: 20px; background: var(--bg-tertiary); border-radius: 12px; border: 1px solid var(--border-color);">
+        <div style="font-weight: 600; margin-bottom: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <span>✅</span> <span>Follow these steps to add your calendar:</span>
+        </div>
+        <ol style="margin: 0; padding-left: 24px; color: var(--text-secondary); line-height: 2;">
+          <li>URL copied to clipboard! ✓</li>
+          <li>Google Calendar opened in new tab</li>
+          <li>In Google Calendar: Click <strong>+</strong> next to "Other calendars"</li>
+          <li>Select <strong>"From URL"</strong></li>
+          <li>Paste the URL (<strong>Ctrl+V</strong> or <strong>Cmd+V</strong>)</li>
+          <li>Click <strong>"Add calendar"</strong></li>
+        </ol>
+      </div>
+
+      <!-- URL Display Fallback -->
+      <div id="urlDisplay" class="hidden" style="margin-top: 16px; padding: 16px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px;">
+        <div style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Calendar Feed URL</div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="text" id="calendarUrlInput" readonly style="flex: 1; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-secondary);" onclick="this.select()">
+          <button class="btn btn-copy" onclick="copyCalendarUrl()" style="padding: 12px 20px; white-space: nowrap;">📋 Copy</button>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">Click the input to select all, or use the Copy button</div>
+      </div>
 
       <!-- Localhost Warning -->
       <div id="localhostWarning" class="hidden" style="margin-top: 16px; padding: 16px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; color: #f59e0b;">
@@ -518,6 +547,17 @@
     // Initialize on page load
     async function init() {
       document.getElementById('deviceType').textContent = getDeviceType();
+      
+      // Show/hide buttons based on device type
+      if (isIos() || isMac()) {
+        // iOS/macOS: Show webcal:// button
+        document.getElementById('subscribeBtn').classList.remove('hidden');
+        document.getElementById('googleCalendarBtn').classList.add('hidden');
+      } else {
+        // Android/Desktop: Show Google Calendar button
+        document.getElementById('subscribeBtn').classList.add('hidden');
+        document.getElementById('googleCalendarBtn').classList.remove('hidden');
+      }
       
       // Check if running on localhost
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -709,6 +749,93 @@
         btn.disabled = false;
         btnText.textContent = 'Subscribe to Calendar';
       }, 500);
+    }
+
+    // Add to Google Calendar (Reliable method for Android/Desktop)
+    function addToGoogleCalendar() {
+      if (!currentFeedId) {
+        showStatus('subscribeStatus', '❌ Calendar feed not ready yet', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('googleCalendarBtn');
+      const btnText = document.getElementById('googleCalendarBtnText');
+      
+      btn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span> Copying URL...';
+
+      const httpsUrl = `${API_BASE}/calendars/feeds/${currentFeedId}.ics`;
+
+      // Copy URL to clipboard
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(httpsUrl).then(() => {
+          // Success - show instructions and open Google Calendar
+          showInstructionsAndOpenCalendar(httpsUrl, btn, btnText);
+        }).catch(() => {
+          // Clipboard failed - show URL display fallback
+          showInstructionsAndOpenCalendar(httpsUrl, btn, btnText, true);
+        });
+      } else {
+        // Clipboard API not available - show URL display fallback
+        showInstructionsAndOpenCalendar(httpsUrl, btn, btnText, true);
+      }
+    }
+
+    // Helper function to show instructions and open Google Calendar
+    function showInstructionsAndOpenCalendar(httpsUrl, btn, btnText, showUrlFallback = false) {
+      // Open Google Calendar in new tab
+      const calWindow = window.open('https://calendar.google.com', '_blank');
+      
+      // Show instructions
+      document.getElementById('googleCalendarInstructions').classList.remove('hidden');
+      
+      // Show URL display if clipboard failed or not available
+      if (showUrlFallback) {
+        document.getElementById('calendarUrlInput').value = httpsUrl;
+        document.getElementById('urlDisplay').classList.remove('hidden');
+      }
+      
+      // Update button with success state
+      btn.disabled = false;
+      btnText.innerHTML = '<span>✅</span> URL Copied!';
+      btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+      
+      // Show success status
+      showStatus('subscribeStatus', 
+        '✅ URL copied! Google Calendar opened. Follow the instructions above to add your calendar.', 
+        'success'
+      );
+
+      // Reset button after 3 seconds
+      setTimeout(() => {
+        btnText.innerHTML = '<span>📅</span> Add to Google Calendar';
+        btn.style.background = 'linear-gradient(135deg, #4285f4 0%, #34a853 100%)';
+      }, 3000);
+    }
+
+    // Copy calendar URL helper
+    function copyCalendarUrl() {
+      const urlInput = document.getElementById('calendarUrlInput');
+      urlInput.select();
+      urlInput.setSelectionRange(0, 99999); // For mobile devices
+      
+      try {
+        document.execCommand('copy');
+        const copyBtn = event.target;
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '✓ Copied!';
+        copyBtn.style.background = 'var(--success)';
+        copyBtn.style.color = 'white';
+        
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+          copyBtn.style.background = '';
+          copyBtn.style.color = '';
+        }, 2000);
+      } catch (err) {
+        // Fallback: just select the text
+        urlInput.select();
+      }
     }
 
     // Render Events List
